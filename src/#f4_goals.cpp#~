@@ -1,0 +1,79 @@
+#include <ros/ros.h>
+#include <move_base_msgs/MoveBaseAction.h>
+#include <actionlib/client/simple_action_client.h>
+
+typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
+
+int main(int argc, char** argv){
+  ros::init(argc, argv, "f4_navigation_goals");
+
+  //tell the action client that we want to spin a thread by default
+  MoveBaseClient ac("move_base", true);
+
+  //wait for the action server to come up
+  while(!ac.waitForServer(ros::Duration(5.0))){
+    ROS_INFO("Waiting for the move_base action server to come up");
+  }
+
+  move_base_msgs::MoveBaseGoal goal;
+
+  //we'll send a goal to the robot to move 1 meter forward
+  goal.target_pose.header.stamp = ros::Time::now();
+  goal.target_pose.header.frame_id = "map";
+  //↑このフレームidをmapに変更することで、地図座標系になる
+  //"base_link"だとロボット座標系
+
+  int i=0;
+  double goal_x,goal_y;
+  double goal_z,goal_w;
+
+  while(ros::ok()){
+
+    if ((i%4)==0){
+
+      goal_x=-3.28866504192;
+      goal_y=-36.1569435846;
+      goal_z=-0.122244318937;
+      goal_w=0.992500038533;
+
+    }else if(i%4==1){
+      goal_x=17.1845482592;
+      goal_y=-34.6384659711;
+      goal_z=0.651399601455;
+      goal_w=0.758734841183;
+    }else if(i%4==2){
+
+      goal_x=14.7783756397;
+      goal_y=2.60686789187;
+      goal_z=-0.999206160241;
+      goal_w=0.0398377878061;
+
+    }else if(i%4==3){
+      goal_x=0.0;
+      goal_y=0.0;
+      goal_z=-0.980855327574;
+      goal_w=0.194737840108;
+    }
+
+    ++i;
+
+    goal.target_pose.pose.position.x = goal_x;
+    goal.target_pose.pose.position.y = goal_y;
+    goal.target_pose.pose.orientation.z = goal_z;
+    goal.target_pose.pose.orientation.w = goal_w;
+
+    //http://mirror.umd.edu/roswiki/doc/diamondback/api/actionlib/html/classactionlib_1_1SimpleActionClient.html
+    ROS_INFO("Sending goal %d",i%4);
+    ac.sendGoalAndWait(goal);
+    ac.waitForResult();
+    //for(int n = 0;!ac.waitForResult(); n++){
+    //  ROS_INFO("frame:%d",n);
+    // }
+    
+    if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
+      ROS_INFO("Hooray");
+    else
+      ROS_INFO("Failed");
+  }
+  return 0;
+}
